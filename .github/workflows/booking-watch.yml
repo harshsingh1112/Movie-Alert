@@ -1,12 +1,7 @@
 name: booking-watch
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch: {}
-  push:
-    branches:
-      - main
 # Allow the workflow to commit state.json back to the repository.
 permissions:
   contents: write
