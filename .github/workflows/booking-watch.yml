@@ -34,9 +34,9 @@ jobs:
 
       - name: Run booking watcher
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.84041b4ed4c6f4afd3b178a7522043d1 }}
-          TELEGRAM_CHAT_ID: ${{ secrets.1769958597 }}
-          SCRAPERAPI_KEY: ${{ secrets.84041b4ed4c6f4afd3b178a7522043d1 }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
           PROXY_URL: ${{ secrets.PROXY_URL }}
         run: python poller.py
 
