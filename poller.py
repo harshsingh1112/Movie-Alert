@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""
-Ticket-booking watcher.
-
-Polls a URL (a BookMyShow / District showtimes page, or an internal API
-request you grabbed from your browser's DevTools) and sends a Telegram
-message the moment a given theatre appears with booking open.
-
-State is tracked in state.json so you get alerted on the *transition*
-to "available" instead of on every run.
-
-Everything is driven by config.json (and/or environment variables), so
-nothing site-specific is hardcoded -- if BookMyShow/District change their
-markup you only edit config, not code.
-"""
 
 import json
 import os
@@ -20,40 +6,35 @@ import re
 import sys
 import time
 import urllib.parse
-from collections import Counter
+from datetime import datetime, date
 from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
+
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = Path(os.environ.get("CONFIG_PATH", ROOT / "config.json"))
 STATE_PATH = Path(os.environ.get("STATE_PATH", ROOT / "state.json"))
 
-# Look like a real Chrome on Windows -- BMS rejects obvious bots.
 DEFAULT_HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
     ),
     "Accept": (
         "text/html,application/xhtml+xml,application/xml;q=0.9,"
         "image/avif,image/webp,*/*;q=0.8"
     ),
     "Accept-Language": "en-IN,en-US;q=0.9,en;q=0.8",
-    "Upgrade-Insecure-Requests": "1",
-    "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Windows"',
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "same-origin",
-    "Sec-Fetch-User": "?1",
 }
 
 
 def load_json(path, default=None):
     if not path.exists():
         return default
+
     with open(path, "r", encoding="utf-8") as fh:
         return json.load(fh)
 
@@ -66,238 +47,534 @@ def save_json(path, data):
 def load_config():
     cfg = load_json(CONFIG_PATH, default={}) or {}
 
-    # Environment variables override the file (used by GitHub Actions secrets).
     env_map = {
-        "TARGET_URL": "target_url",
-        "THEATRE": "theatre",
-        "MOVIE": "movie",
-        "REQUESTED_DATE": "requested_date",
         "TELEGRAM_BOT_TOKEN": "telegram_bot_token",
         "TELEGRAM_CHAT_ID": "telegram_chat_id",
     }
+
     for env_key, cfg_key in env_map.items():
         if os.environ.get(env_key):
             cfg[cfg_key] = os.environ[env_key]
 
-    if os.environ.get("HEADERS_JSON"):
-        cfg["headers"] = json.loads(os.environ["HEADERS_JSON"])
+    required = [
+        "movie",
+        "movie_code",
+        "city",
+        "base_url",
+        "telegram_bot_token",
+        "telegram_chat_id",
+    ]
 
-    # The BMS date is embedded in the URL, so build the URL from the template
-    # and the (possibly overridden) requested_date. Set REQUESTED_DATE=20260717
-    # to point everything at the 17th for a live end-to-end test.
-    if cfg.get("url_template") and cfg.get("requested_date"):
-        cfg["target_url"] = cfg["url_template"].format(date=cfg["requested_date"])
+    missing = [key for key in required if not cfg.get(key)]
 
-    required = ["target_url", "telegram_bot_token", "telegram_chat_id"]
-    detector = cfg.get("detector")
-    if detector in ("bms_date", "venue_date"):
-        required.append("requested_date")
-    elif detector != "venue_date":
-        required.append("theatre")
-    if detector == "venue_date" and not (cfg.get("venue_code") or cfg.get("venue_codes")):
-        sys.exit("venue_date detector needs 'venue_code' or 'venue_codes'")
-    missing = [k for k in required if not cfg.get(k)]
     if missing:
-        sys.exit(f"Missing required config: {', '.join(missing)}")
+        sys.exit(
+            "Missing required config: " + ", ".join(missing)
+        )
+
     return cfg
 
 
 def send_telegram(token, chat_id, text):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    resp = requests.post(
+
+    response = requests.post(
         url,
-        json={"chat_id": chat_id, "text": text, "disable_web_page_preview": False},
+        json={
+            "chat_id": chat_id,
+            "text": text,
+            "disable_web_page_preview": False,
+        },
         timeout=30,
     )
-    resp.raise_for_status()
+
+    response.raise_for_status()
 
 
-def fetch(cfg):
-    """
-    Fetch the target URL from an India egress when configured.
-
-    BookMyShow blocks non-India / datacenter IPs (e.g. GitHub's US runners),
-    so a plain request from CI gets a 403. Two ways to route through India:
-
-    * SCRAPERAPI_KEY  -- routes via ScraperAPI with country_code=in and solves
-                         anti-bot. Easiest for CI. Set it as a repo secret.
-    * PROXY_URL       -- a standard http(s) proxy string, e.g.
-                         "http://user:pass@in-proxy-host:port".
-
-    With neither set, it makes a direct request with browser headers plus a
-    cookie warm-up -- enough only when running from an India IP.
-    """
+def fetch_url(cfg, url):
     headers = dict(DEFAULT_HEADERS)
-    headers.update(cfg.get("headers", {}))
 
     scraper_key = os.environ.get("SCRAPERAPI_KEY")
+
     if scraper_key:
-        api_url = "https://api.scraperapi.com/?" + urllib.parse.urlencode(
-            {"api_key": scraper_key, "country_code": "in", "url": cfg["target_url"]}
+        api_url = (
+            "https://api.scraperapi.com/?"
+            + urllib.parse.urlencode(
+                {
+                    "api_key": scraper_key,
+                    "country_code": "in",
+                    "url": url,
+                }
+            )
         )
-        resp = requests.get(api_url, timeout=90)
-        resp.raise_for_status()
-        return resp.text
 
-    proxy = os.environ.get("PROXY_URL")
-    proxies = {"http": proxy, "https": proxy} if proxy else None
+        response = requests.get(
+            api_url,
+            timeout=90,
+        )
 
-    session = requests.Session()
-    session.headers.update(headers)
+        response.raise_for_status()
+        return response.text
 
-    # Warm-up: hit the homepage first to pick up cookies (helps soft bot checks).
+    response = requests.get(
+        url,
+        headers=headers,
+        timeout=45,
+    )
+
+    response.raise_for_status()
+    return response.text
+
+
+def normalize(text):
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def find_dates(page_text):
+    """
+    Find YYYYMMDD date tokens exposed by BookMyShow.
+    """
+
+    tokens = re.findall(r"\b20\d{6}\b", page_text)
+
+    dates = set()
+
+    today = date.today()
+
+    for token in tokens:
+        try:
+            parsed = datetime.strptime(token, "%Y%m%d").date()
+
+            # Ignore obviously old dates.
+            if parsed >= today:
+                dates.add(token)
+
+        except ValueError:
+            continue
+
+    return sorted(dates)
+
+
+def date_url(cfg, requested_date):
+    """
+    Build the BookMyShow date page.
+    """
+
+    return (
+        f"{cfg['base_url']}/buytickets/"
+        f"{cfg['movie_code']}/"
+        f"{requested_date}"
+        f"?etCodes={cfg['movie_code']}"
+        f"&language=english"
+    )
+
+
+def clean_show_url(url):
+    if not url:
+        return ""
+
+    if url.startswith("/"):
+        return "https://in.bookmyshow.com" + url
+
+    return url
+
+
+def extract_show_links(html, requested_date, cfg):
+    """
+    Extract BookMyShow seat-layout/show identifiers.
+
+    Example:
+
+    /seat-layout/ET00516728/ALUC/4977/20260925
+    """
+
+    pattern = re.compile(
+        rf"/seat-layout/"
+        rf"{re.escape(cfg['movie_code'])}"
+        rf"/([^/?\"' ]+)"
+        rf"/([^/?\"' ]+)"
+        rf"/{requested_date}"
+    )
+
+    matches = pattern.findall(html)
+
+    shows = []
+
+    seen = set()
+
+    for venue_code, show_code in matches:
+
+        key = (
+            requested_date,
+            venue_code,
+            show_code,
+        )
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+
+        booking_url = (
+            "https://in.bookmyshow.com"
+            f"/movies/{cfg['city']}/"
+            f"{cfg['movie_slug']}/"
+            f"buytickets/{cfg['movie_code']}/"
+            f"{requested_date}"
+            f"?etCodes={cfg['movie_code']}"
+            f"&language=english"
+        )
+
+        seat_url = (
+            "https://in.bookmyshow.com"
+            f"/seat-layout/{cfg['movie_code']}/"
+            f"{venue_code}/{show_code}/{requested_date}"
+        )
+
+        shows.append(
+            {
+                "date": requested_date,
+                "venue_code": venue_code,
+                "show_code": show_code,
+                "booking_url": booking_url,
+                "seat_url": seat_url,
+            }
+        )
+
+    return shows
+
+
+def find_theatre_name(html, venue_code):
+    """
+    Try to recover the theatre name from the HTML around the
+    venue code.
+
+    BookMyShow changes its markup periodically, so this is
+    intentionally heuristic.
+    """
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Look for elements containing the venue code.
+    matches = soup.find_all(
+        string=lambda text: text and venue_code.lower() in text.lower()
+    )
+
+    for match in matches:
+        parent = match.parent
+
+        if not parent:
+            continue
+
+        text = normalize(parent.get_text(" ", strip=True))
+
+        if 3 <= len(text) <= 180:
+            return text
+
+        # Try a few ancestors.
+        ancestor = parent
+
+        for _ in range(5):
+            ancestor = ancestor.parent
+
+            if not ancestor:
+                break
+
+            text = normalize(
+                ancestor.get_text(" ", strip=True)
+            )
+
+            if 3 <= len(text) <= 180:
+                return text
+
+    return f"Venue {venue_code}"
+
+
+def extract_showtimes(html):
+    """
+    Extract visible time strings.
+
+    This is deliberately conservative. It is used to enrich
+    notifications; the unique show identity is still based
+    on the BMS show identifier.
+    """
+
+    pattern = re.compile(
+        r"\b(?:0?[1-9]|1[0-2]):[0-5]\d\s?(?:AM|PM)\b",
+        re.IGNORECASE,
+    )
+
+    return sorted(
+        set(
+            normalize(match.upper())
+            for match in pattern.findall(
+                BeautifulSoup(
+                    html,
+                    "html.parser",
+                ).get_text(" ", strip=True)
+            )
+        )
+    )
+
+
+def format_is_present(html, cfg):
+    """
+    Confirm that the requested language/format is represented
+    on the page.
+
+    The exact BMS label currently used is:
+    MS-Infinity Vsn 3d
+    """
+
+    text = normalize(
+        BeautifulSoup(
+            html,
+            "html.parser",
+        ).get_text(" ", strip=True)
+    ).lower()
+
+    required_format = cfg.get(
+        "format",
+        "ms-infinity vsn 3d",
+    ).lower()
+
+    format_variants = [
+        required_format,
+        "ms-infinity vsn 3d",
+        "ms infinity vision 3d",
+        "ms-infinity vision 3d",
+    ]
+
+    has_format = any(
+        variant in text
+        for variant in format_variants
+    )
+
+    has_english = "english" in text
+
+    return has_format and has_english
+
+
+def discover_shows(cfg, landing_html):
+    """
+    Discover every currently exposed date, then inspect each
+    date-specific BookMyShow page.
+
+    New dates are therefore discovered automatically when
+    BookMyShow adds them to the movie page.
+    """
+
+    dates = find_dates(landing_html)
+
+    print(f"Discovered dates: {dates}")
+
+    all_shows = []
+
+    for requested_date in dates:
+
+        print(
+            f"Checking BookMyShow date {requested_date}..."
+        )
+
+        url = date_url(
+            cfg,
+            requested_date,
+        )
+
+        try:
+            html = fetch_url(
+                cfg,
+                url,
+            )
+
+        except requests.RequestException as exc:
+            print(
+                f"Failed to fetch {requested_date}: {exc}"
+            )
+            continue
+
+        if not format_is_present(
+            html,
+            cfg,
+        ):
+            print(
+                f"Requested format not detected for "
+                f"{requested_date}"
+            )
+            continue
+
+        shows = extract_show_links(
+            html,
+            requested_date,
+            cfg,
+        )
+
+        showtimes = extract_showtimes(html)
+
+        for show in shows:
+
+            show["showtimes_seen"] = showtimes
+            show["theatre"] = find_theatre_name(
+                html,
+                show["venue_code"],
+            )
+
+            all_shows.append(show)
+
+        # Be polite to the site/proxy.
+        time.sleep(1)
+
+    return all_shows
+
+
+def make_show_key(show):
+    return "|".join(
+        [
+            show.get("date", ""),
+            show.get("venue_code", ""),
+            show.get("show_code", ""),
+        ]
+    )
+
+
+def pretty_date(value):
     try:
-        session.get("https://in.bookmyshow.com/", timeout=30, proxies=proxies)
-    except requests.RequestException:
-        pass
+        return datetime.strptime(
+            value,
+            "%Y%m%d",
+        ).strftime("%d %b %Y")
 
-    resp = session.get(
-        cfg["target_url"],
-        timeout=30,
-        proxies=proxies,
-        headers={"Referer": "https://in.bookmyshow.com/explore/movies-chennai"},
+    except ValueError:
+        return value
+
+
+def notify_new_shows(cfg, new_shows):
+    """
+    Send one Telegram message containing all newly detected
+    shows from this scan.
+    """
+
+    if not new_shows:
+        return
+
+    lines = [
+        "🎬 Avengers Endgame: Encore",
+        "🆕 New BookMyShow show detected!",
+        "",
+        "Language: English",
+        "Format: MS-Infinity Vision 3D",
+        "",
+    ]
+
+    for show in new_shows:
+
+        lines.extend(
+            [
+                f"📅 {pretty_date(show['date'])}",
+                f"🏢 {show['theatre']}",
+                f"🎟️ Show: {show['show_code']}",
+                f"🔗 {show['seat_url']}",
+                "",
+            ]
+        )
+
+    send_telegram(
+        cfg["telegram_bot_token"],
+        cfg["telegram_chat_id"],
+        "\n".join(lines),
     )
-    resp.raise_for_status()
-    return resp.text
-
-
-def is_available_bms_date(page_text, cfg):
-    """
-    BookMyShow-specific detector for "a given date has opened for booking".
-
-    BMS only renders showtimes for the date currently being displayed, and it
-    silently falls back to the nearest available date when you request a date
-    that hasn't opened yet. So the requested date (e.g. 20260720) sits at a
-    low ~3 count (just the date-strip navigation) until it opens, at which
-    point its showtimes render and it becomes the *dominant* date token.
-
-    Rule: open when the requested date is the most-referenced date token on
-    the page and it clears a small floor (well above strip-only noise).
-    """
-    requested = cfg["requested_date"]  # e.g. "20260720"
-    floor = cfg.get("min_references", 10)
-
-    tokens = re.findall(r"20\d{6}", page_text)
-    if not tokens:
-        return False
-
-    counts = Counter(tokens)
-    top_date, _ = counts.most_common(1)[0]
-    requested_count = counts.get(requested, 0)
-
-    return top_date == requested and requested_count >= floor
-
-
-def is_available_venue_date(page_text, cfg):
-    """
-    Theatre-specific detector: is a given venue bookable on a given date?
-
-    BMS renders a per-venue booking link like
-        /cinemas/chennai/<slug>/buytickets/<venueCode>/<date>
-    only when that venue has live shows for that exact date. Because the date
-    is baked into the link, it can't be confused with the silent fallback
-    (a fallback page carries /<code>/<fallbackDate>, not /<code>/<ourDate>).
-
-    Set venue_code (one) or venue_codes (list). With a list, it's open when
-    ANY of them is bookable for the date.
-    """
-    date = cfg["requested_date"]
-    codes = cfg.get("venue_codes") or [cfg["venue_code"]]
-    return any("/{}/{}".format(code, date) in page_text for code in codes)
-
-
-def is_available(page_text, cfg):
-    detector = cfg.get("detector")
-    if detector == "venue_date":
-        return is_available_venue_date(page_text, cfg)
-    if detector == "bms_date":
-        return is_available_bms_date(page_text, cfg)
-    return is_available_generic(page_text, cfg)
-
-
-def is_available_generic(page_text, cfg):
-    """
-    Booking is considered OPEN for the target theatre when the theatre name
-    is present AND at least one 'booking is live' signal is present.
-
-    Matching is case-insensitive and ignores extra whitespace so small
-    formatting differences don't cause misses.
-    """
-    haystack = re.sub(r"\s+", " ", page_text).lower()
-
-    theatre = re.sub(r"\s+", " ", cfg["theatre"]).lower().strip()
-    if theatre not in haystack:
-        return False
-
-    # If the movie name is configured, require it too (avoids false hits when
-    # the theatre is listed for other movies).
-    movie = cfg.get("movie")
-    if movie:
-        if re.sub(r"\s+", " ", movie).lower().strip() not in haystack:
-            return False
-
-    # Signals that booking is actually live rather than "coming soon".
-    open_signals = cfg.get(
-        "open_signals",
-        ["book tickets", "book now", '"showtimes"', "showtime", "select seats"],
-    )
-    # Signals that it's NOT yet open -- if present near-exclusively, treat as closed.
-    closed_signals = cfg.get("closed_signals", ["notify me", "coming soon"])
-
-    has_open = any(s.lower() in haystack for s in open_signals)
-    only_closed = any(s.lower() in haystack for s in closed_signals) and not has_open
-
-    return has_open and not only_closed
 
 
 def main():
-    cfg = load_config()
-    state = load_json(STATE_PATH, default={"available": False}) or {"available": False}
 
-    target_desc = cfg.get("theatre") or cfg.get("requested_date", "target")
-    label = f"{cfg.get('movie', 'movie')} @ {target_desc}"
+    cfg = load_config()
+
+    state = load_json(
+        STATE_PATH,
+        default={
+            "shows": {}
+        },
+    ) or {
+        "shows": {}
+    }
+
+    print(
+        f"Checking {cfg['movie']} "
+        f"in {cfg['city']}..."
+    )
 
     try:
-        page = fetch(cfg)
+        landing_html = fetch_url(
+            cfg,
+            cfg["base_url"],
+        )
+
     except requests.RequestException as exc:
-        # Transient network/blocking errors shouldn't crash the workflow.
-        print(f"[{label}] fetch failed: {exc}")
+        print(
+            f"Landing page fetch failed: {exc}"
+        )
         return 0
 
-    available = is_available(page, cfg)
-    print(f"[{label}] available={available} (was {state.get('available')})")
+    current_shows = discover_shows(
+        cfg,
+        landing_html,
+    )
 
-    if available and not state.get("available"):
-        if cfg.get("detector") in ("bms_date", "venue_date"):
-            rd = cfg["requested_date"]
-            pretty = f"{rd[6:8]}-{rd[4:6]}-{rd[0:4]}"
-            venue = cfg.get("venue_label") or cfg.get("venue_code") or ""
-            venue_line = f"Theatre: {venue}\n" if venue else ""
-            msg = (
-                f"🎬 Booking just OPENED!\n\n"
-                f"{cfg.get('movie', 'Movie')}\n"
-                f"{venue_line}"
-                f"Date: {pretty}\n\n"
-                f"Book here: {cfg['target_url']}"
-            )
-        else:
-            msg = (
-                f"🎬 Booking is OPEN!\n\n"
-                f"{cfg.get('movie', 'Movie')}\n"
-                f"Theatre: {cfg['theatre']}\n\n"
-                f"Book here: {cfg['target_url']}"
-            )
-        send_telegram(cfg["telegram_bot_token"], cfg["telegram_chat_id"], msg)
-        print(f"[{label}] notification sent")
+    print(
+        f"Detected {len(current_shows)} show records."
+    )
 
-    # Persist current state so we don't re-alert every run.
-    if available != state.get("available"):
-        state["available"] = available
-        state["checked_at"] = int(time.time())
-        save_json(STATE_PATH, state)
+    current_state = {}
+
+    for show in current_shows:
+
+        key = make_show_key(show)
+
+        current_state[key] = show
+
+    previous_state = state.get(
+        "shows",
+        {},
+    )
+
+    new_keys = [
+        key
+        for key in current_state
+        if key not in previous_state
+    ]
+
+    new_shows = [
+        current_state[key]
+        for key in new_keys
+    ]
+
+    print(
+        f"New shows detected: {len(new_shows)}"
+    )
+
+    if new_shows:
+
+        notify_new_shows(
+            cfg,
+            new_shows,
+        )
+
+        print(
+            "Telegram notification sent."
+        )
+
+    save_json(
+        STATE_PATH,
+        {
+            "shows": current_state,
+            "checked_at": int(time.time()),
+        },
+    )
 
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(
+        main()
+    )
