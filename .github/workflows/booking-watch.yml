@@ -2,10 +2,7 @@ name: booking-watch
 
 on:
   schedule:
-    # Run approximately every 10 minutes.
     - cron: "4,14,24,34,44,54 * * * *"
-
-  # Allows manual testing from GitHub Actions.
   workflow_dispatch: {}
 
 # Allow the workflow to commit state.json back to the repository.
