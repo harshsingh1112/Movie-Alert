@@ -1,9 +1,8 @@
 {
-  "detector": "venue_date",
-  "movie": "Spider-Man: Brand New Day",
-  "requested_date": "20260730",
-  "venue_code": "INTO",
-  "venue_label": "INOX: The Marina Mall, OMR",
-  "url_template": "https://in.bookmyshow.com/movies/chennai/spiderman-brand-new-day/buytickets/ET00502600/{date}",
-  "min_references": 10
+  "movie": "Avengers Endgame: Encore",
+  "movie_code": "ET00516728",
+  "movie_slug": "avengers-endgame-encore",
+  "city": "hyderabad",
+  "base_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/ET00516728",
+  "format": "MS-Infinity Vsn 3d"
 }
