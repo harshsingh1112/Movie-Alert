@@ -1,14 +1,14 @@
 name: booking-watch
 
 on:
-  # schedule:
-  #   # Every ~10 min, offset off :00/:10 etc. GitHub delays/drops scheduled
-  #   # runs during high load (worst at the top of the hour), so the odd minutes
-  #   # get served more reliably. Runs are still best-effort, not guaranteed.
-  #   - cron: "4,14,24,34,44,54 * * * *"
-  workflow_dispatch: {}   # lets you trigger a manual run from the Actions tab
+  schedule:
+    # Run approximately every 10 minutes.
+    - cron: "4,14,24,34,44,54 * * * *"
 
-# Allow the workflow to commit the updated state file back to the repo.
+  # Allows manual testing from GitHub Actions.
+  workflow_dispatch: {}
+
+# Allow the workflow to commit state.json back to the repository.
 permissions:
   contents: write
 
@@ -19,22 +19,23 @@ concurrency:
 jobs:
   poll:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run poller
+      - name: Run booking watcher
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          # Route through an India egress so BookMyShow doesn't 403 the
-          # US-based GitHub runner. Set SCRAPERAPI_KEY (or PROXY_URL) as a secret.
           SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
           PROXY_URL: ${{ secrets.PROXY_URL }}
         run: python poller.py
@@ -44,6 +45,7 @@ jobs:
           if [[ -n "$(git status --porcelain state.json)" ]]; then
             git config user.name "booking-watch-bot"
             git config user.email "actions@users.noreply.github.com"
+
             git add state.json
             git commit -m "chore: update booking-watch state [skip ci]"
             git push
