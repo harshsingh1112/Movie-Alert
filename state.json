@@ -1,4 +1,293 @@
 {
-  "shows": {},
-  "checked_at": 1789835753
+  "shows": {
+    "20260925|ALUC|5135": {
+      "date": "20260925",
+      "venue_code": "ALUC",
+      "theatre": "ALLU Cinemas: Kokapet",
+      "time": "08:20 AM",
+      "session_id": "5135",
+      "format": "English \u2022 MS-Infinity Vsn 3d | BARCO LASER 4K ATMOS",
+      "attributes": "BARCO LASER 4K ATMOS",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260925|ALUC|4976": {
+      "date": "20260925",
+      "venue_code": "ALUC",
+      "theatre": "ALLU Cinemas: Kokapet",
+      "time": "03:40 PM",
+      "session_id": "4976",
+      "format": "English \u2022 MS-Infinity Vsn 3d | BARCO LASER 4K ATMOS",
+      "attributes": "BARCO LASER 4K ATMOS",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260925|ALUC|4979": {
+      "date": "20260925",
+      "venue_code": "ALUC",
+      "theatre": "ALLU Cinemas: Kokapet",
+      "time": "07:20 PM",
+      "session_id": "4979",
+      "format": "English \u2022 MS-Infinity Vsn 3d | BARCO LASER 4K ATMOS",
+      "attributes": "BARCO LASER 4K ATMOS",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260925|ALUC|4977": {
+      "date": "20260925",
+      "venue_code": "ALUC",
+      "theatre": "ALLU Cinemas: Kokapet",
+      "time": "11:00 PM",
+      "session_id": "4977",
+      "format": "English \u2022 MS-Infinity Vsn 3d | BARCO LASER 4K ATMOS",
+      "attributes": "BARCO LASER 4K ATMOS",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260925|CTNR|13506": {
+      "date": "20260925",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "08:30 AM",
+      "session_id": "13506",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260925|CTNR|13482": {
+      "date": "20260925",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "12:00 PM",
+      "session_id": "13482",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260925|CTNR|13483": {
+      "date": "20260925",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "03:45 PM",
+      "session_id": "13483",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260925|CTNR|13484": {
+      "date": "20260925",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "07:30 PM",
+      "session_id": "13484",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260925|CTNR|13485": {
+      "date": "20260925",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "11:15 PM",
+      "session_id": "13485",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260925?etCodes=ET00516728&language=english"
+    },
+    "20260926|ALUC|5136": {
+      "date": "20260926",
+      "venue_code": "ALUC",
+      "theatre": "ALLU Cinemas: Kokapet",
+      "time": "08:20 AM",
+      "session_id": "5136",
+      "format": "English \u2022 MS-Infinity Vsn 3d | BARCO LASER 4K ATMOS",
+      "attributes": "BARCO LASER 4K ATMOS",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    },
+    "20260926|ALUC|5018": {
+      "date": "20260926",
+      "venue_code": "ALUC",
+      "theatre": "ALLU Cinemas: Kokapet",
+      "time": "03:40 PM",
+      "session_id": "5018",
+      "format": "English \u2022 MS-Infinity Vsn 3d | BARCO LASER 4K ATMOS",
+      "attributes": "BARCO LASER 4K ATMOS",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    },
+    "20260926|ALUC|5019": {
+      "date": "20260926",
+      "venue_code": "ALUC",
+      "theatre": "ALLU Cinemas: Kokapet",
+      "time": "07:20 PM",
+      "session_id": "5019",
+      "format": "English \u2022 MS-Infinity Vsn 3d | BARCO LASER 4K ATMOS",
+      "attributes": "BARCO LASER 4K ATMOS",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    },
+    "20260926|ALUC|5020": {
+      "date": "20260926",
+      "venue_code": "ALUC",
+      "theatre": "ALLU Cinemas: Kokapet",
+      "time": "11:00 PM",
+      "session_id": "5020",
+      "format": "English \u2022 MS-Infinity Vsn 3d | BARCO LASER 4K ATMOS",
+      "attributes": "BARCO LASER 4K ATMOS",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    },
+    "20260926|CTNR|13593": {
+      "date": "20260926",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "08:30 AM",
+      "session_id": "13593",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "2",
+      "seat_statuses": [
+        "FILLING FAST",
+        "SOLD OUT"
+      ],
+      "bookable": false,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    },
+    "20260926|CTNR|13486": {
+      "date": "20260926",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "12:00 PM",
+      "session_id": "13486",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    },
+    "20260926|CTNR|13487": {
+      "date": "20260926",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "03:45 PM",
+      "session_id": "13487",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    },
+    "20260926|CTNR|13488": {
+      "date": "20260926",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "07:30 PM",
+      "session_id": "13488",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "1",
+      "seat_statuses": [
+        "ALMOST FULL",
+        "SOLD OUT"
+      ],
+      "bookable": true,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    },
+    "20260926|CTNR|13489": {
+      "date": "20260926",
+      "venue_code": "CTNR",
+      "theatre": "Cinepolis: TNR North City, Suchitra, Hyderabad",
+      "time": "11:15 PM",
+      "session_id": "13489",
+      "format": "English \u2022 MS-Infinity Vsn 3d",
+      "attributes": "",
+      "avail_status": "2",
+      "seat_statuses": [
+        "FILLING FAST",
+        "SOLD OUT"
+      ],
+      "bookable": false,
+      "booking_url": "https://in.bookmyshow.com/movies/hyderabad/avengers-endgame-encore/buytickets/ET00516728/20260926?etCodes=ET00516728&language=english"
+    }
+  },
+  "checked_at": 1789837007
 }
