@@ -191,7 +191,9 @@ def fallback_dates():
 
 def date_url(cfg, requested_date):
     return (
-        f"{cfg['base_url']}/buytickets/"
+        f"https://in.bookmyshow.com/movies/"
+        f"{cfg['city']}/"
+        f"{cfg['movie_slug']}/buytickets/"
         f"{cfg['movie_code']}/"
         f"{requested_date}"
         f"?etCodes={cfg['movie_code']}"
