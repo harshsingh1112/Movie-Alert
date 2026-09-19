@@ -86,17 +86,36 @@ def load_config():
 def send_telegram(token, chat_id, text):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
-    response = requests.post(
-        url,
-        json={
-            "chat_id": chat_id,
-            "text": text,
-            "disable_web_page_preview": False,
-        },
-        timeout=30,
-    )
+    # Telegram has a 4096-character limit per message.
+    # Split long notifications into safe chunks.
+    max_length = 3800
 
-    response.raise_for_status()
+    chunks = []
+
+    while len(text) > max_length:
+        split_at = text.rfind("\n", 0, max_length)
+
+        if split_at <= 0:
+            split_at = max_length
+
+        chunks.append(text[:split_at])
+        text = text[split_at:].lstrip()
+
+    if text:
+        chunks.append(text)
+
+    for chunk in chunks:
+        response = requests.post(
+            url,
+            json={
+                "chat_id": chat_id,
+                "text": chunk,
+                "disable_web_page_preview": False,
+            },
+            timeout=30,
+        )
+
+        response.raise_for_status()
 
 
 # ---------------------------------------------------------
